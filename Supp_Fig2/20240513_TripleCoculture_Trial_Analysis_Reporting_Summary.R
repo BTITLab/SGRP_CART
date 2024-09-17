@@ -1,0 +1,264 @@
+# The following code was used to generate Supplementary Fig. 2g.
+## Median Fluorescence Intensity was extracted in FlowJo from debris_out/singlets/live/CD3-mCherry-CD11b+ gated cells. "Fraction" constitutes % of parental cells gated as described before (FMO-controls when necessary).
+
+# Housekeeping: clear all objects from the environment to start fresh
+rm(list = ls())
+
+library(ggplot2)
+library(ggstatsplot)
+library(tidyverse)
+library(stringr)
+library(tidyr)
+library(purrr)
+library(ComplexHeatmap)
+
+# set working directories
+## Get the path of the active R script
+script_dir <- dirname(rstudioapi::getActiveDocumentContext()$path)
+
+## Set the working directory to the script's location
+setwd(script_dir)
+
+data_folder <- "/data"
+plotDir <- "plots"
+
+# read in data extracted from FlowJo (described above)
+df <- read.csv(file.path(script_dir, "data/counts.csv"), header = TRUE, sep = ",", dec = ",", check.names = FALSE)
+
+# rename sample column
+names(df)[1] <- "sample_id"
+
+# # Filter out files that contain "FMO" in the sample_id and retain those with ".fcs"
+df <- df[!grepl("FMO", df$sample_id), ]
+df <- df[grepl(".fcs", df$sample_id), ]
+df <- df[,-19] # Remove the 19th column
+
+# replace "-" in colnames with "." as hyphens can generate issues in downstream functions
+colnames(df) <- gsub(pattern = "-", ".", colnames(df))
+
+# Clean up the "sample_id" column by removing unwanted parts
+df$sample_id <- substring(text = df$sample_id, 4) # remove well_id (first 3 characters) from FACS instrument
+df$sample_id <- gsub(pattern = ".fcs", replacement = "", x = df$sample_id) # remove ".fcs" from sample_id
+
+
+# ## create metadata file by categorizing samples
+df$CAR <- ifelse(grepl(pattern = "CD19", x = df$sample_id), yes = "CD19", 
+                 no = ifelse(grepl(pattern = "EGFRvIII", x = df$sample_id), yes = "EGFRvIII", no = "Macrophage_only"))
+df$SGRP <- ifelse(grepl(pattern = "SGRP", x = df$sample_id), yes = "SGRP", no = "")
+df$condition <- ifelse(test = grepl(pattern = "SGRP", x = df$sample_id), yes = paste0(df$CAR, "-", df$SGRP), no = df$CAR)
+df$donor <- str_extract(df$sample_id, "HD..")
+                
+# bring column condition to first few columns
+df <- df[,c(1, 19:22, 2:18)]
+table(df$condition)
+
+# reassure that no NAs were introduced or present
+table(is.na.data.frame(df))
+
+# Convert specified columns to factors
+cols_to_factor <- c("sample_id", "CAR", "SGRP", "condition", "donor")
+df[cols_to_factor] <- lapply(df[cols_to_factor], as.factor)
+
+# Convert specified columns to numerics
+df[6:22] <- lapply(df[6:22], as.numeric)
+
+# reassure that no NAs were introduced by numeric conversion
+table(is.na.data.frame(df))
+
+str(df)
+
+
+### Heatmap
+
+# Exclude certain columns not needed for heatmap (e.g., FSC.A, SSC.A, mCherry)
+
+# only keep "sample_id" and "condition" and the columns 6 to 13
+df <- df[, c(1, 4, 6:13)]
+
+# Order the dataframe by the condition column
+df <- df[order(df$condition), ]
+
+# Transpose and scale the data
+scaled_data <- t(scale(df[, 3:10], center = TRUE))
+
+# Setup column annotation
+column_ha <- HeatmapAnnotation(
+  condition = df$condition,
+  col = list(condition = c(
+    "CD19" = "red", 
+    "CD19-SGRP" = "blue", 
+    "EGFRvIII" = "green", 
+    "EGFRvIII-SGRP" = "orange",
+    "Macrophage_only" = "grey"
+  ))
+)
+
+# Labels for columns
+lbls_col <- df$sample_id
+
+# custom order
+custom.order <- colnames(df)[-c(1:2)]
+
+# Generate the heatmap
+hm <- Heatmap(scaled_data,
+                  rect_gp = gpar(col = "white", lwd = 0.8), 
+                  row_names_side = "left", 
+                  row_dend_side = "right",
+                  name = "Z-score",
+                  top_annotation = column_ha, 
+                  column_labels = lbls_col,
+                  show_column_dend = FALSE,
+                  column_order = order(df$condition),
+                  row_order = custom.order)
+
+# Save the heatmap as a PDF
+pdf(file.path(plotDir, "Supp_Fig2g.pdf"), width = 15)
+hm
+dev.off()
+
+
+## annotate rows with p.values derived from anova + post-hoc test (Tukey-HSD)
+
+# Initialize an empty dataframe with the expected column structure
+tukey_results <- data.frame(
+  comparison = character(),
+  difference = numeric(),
+  lwr = numeric(),
+  upr = numeric(),
+  p.adj = numeric(),
+  Variable = character(),
+  stringsAsFactors = FALSE
+)
+
+# Loop through columns 3 to 10
+for (col in names(df)[3:10]) {
+  # Perform ANOVA
+  table <- aov(as.formula(paste(col, " ~ condition")), data = df)
+  
+  # Check for significance (e.g., p-value <= 0.05)
+  if (summary(table)[[1]]$"Pr(>F)"[1] <= 1) { 
+    # Perform Tukey's HSD test
+    tukey_hsd <- TukeyHSD(table)
+    
+    # Extract Tukey's HSD results and store in a dataframe
+    tukey_df <- as.data.frame(tukey_hsd$condition)
+    tukey_df$Variable <- col
+    
+    # Append Tukey's HSD results to the dataframe
+    tukey_results <- rbind(tukey_results, tukey_df)
+  }
+}
+
+
+tukey_results$comparison <- rownames(tukey_results)
+rownames(tukey_results) <- NULL 
+
+
+## remove additional numbers behind comparison generated by loop above
+tukey_results$comparison <- sub("(CD19-SGRP-CD19).*", "\\1", tukey_results$comparison)
+tukey_results$comparison <- sub("(EGFRvIII-SGRP-CD19-SGRP).*", "\\1", tukey_results$comparison)
+tukey_results$comparison <- sub("(Macrophage_only-CD19-SGRP).*", "\\1", tukey_results$comparison)
+tukey_results$comparison <- sub("(Macrophage_only-CD19-SGRP).*", "\\1", tukey_results$comparison)
+tukey_results$comparison <- sub("(EGFRvIII-SGRP-EGFRvIII).*", "\\1", tukey_results$comparison)
+
+
+tukey_results$comparison <- ifelse(test = grepl(pattern = "EGFRvIII-SGRP-CD19-", x = tukey_results$comparison), yes = sub("(EGFRvIII-SGRP-CD19-SGRP).*", "\\1", tukey_results$comparison), no = sub("(EGFRvIII-SGRP-CD19).*", "\\1", tukey_results$comparison))
+tukey_results$comparison <- ifelse(test = grepl(pattern = "Macrophage_only-CD19-", x = tukey_results$comparison), yes = sub("(Macrophage_only-CD19-SGRP).*", "\\1", tukey_results$comparison), no = sub("(Macrophage_only-CD19).*", "\\1", tukey_results$comparison))
+tukey_results$comparison <- ifelse(test = grepl(pattern = "Macrophage_only-EGFRvIII-", x = tukey_results$comparison), yes = sub("(Macrophage_only-EGFRvIII-SGRP).*", "\\1", tukey_results$comparison), no = sub("(Macrophage_only-EGFRvIII).*", "\\1", tukey_results$comparison))
+tukey_results$comparison <- ifelse(test = grepl(pattern = "EGFRvIII-CD19-", x = tukey_results$comparison), yes = sub("(EGFRvIII-CD19-SGRP).*", "\\1", tukey_results$comparison), no = sub("(EGFRvIII-CD19).*", "\\1", tukey_results$comparison))
+
+# replace "-" with "_" in variable "comparison"
+tukey_results$comparison <- gsub("-", "_", x = tukey_results$comparison)
+
+tukey_results$comparison <- factor(tukey_results$comparison)
+str(tukey_results)
+
+
+# create a vector containing unique levels in tukey_results$comparison (since we have 5 conditions, we should get 10 unique contrasts)
+comparison_levels <- unique(tukey_results$comparison)
+
+# Loop through each level and create a data frame subset
+for (level in comparison_levels) {
+  # Subset tukey_results for the current level
+  subset_df <- tukey_results[tukey_results$comparison == level, ]
+  
+  # Create a new data frame name based on the level
+  df_name <- gsub("\\W", "_", level)  # Replace non-alphanumeric characters with underscores
+  
+  # Remove "tukey_results_" from the name if present
+  df_name <- gsub("^tukey_results_", "", df_name)
+  
+  # Assign the subset data frame to the new name
+  assign(df_name, subset_df)
+}
+
+
+
+
+tukey_results$Variable <- factor(tukey_results$Variable)
+
+# custom order
+custom.order <- colnames(df)[-c(1:2)]
+custom.order %in% colnames(df)
+
+
+## only keep "p adj", "Variable", "comparison" of the individual dataframes
+
+# List of data frame names
+df_names <- c("CD19_SGRP_CD19", "EGFRvIII_CD19", "EGFRvIII_CD19_SGRP", "EGFRvIII_SGRP_CD19",
+              "EGFRvIII_SGRP_CD19_SGRP", "EGFRvIII_SGRP_EGFRvIII", "Macrophage_only_CD19",
+              "Macrophage_only_CD19_SGRP", "Macrophage_only_EGFRvIII", "Macrophage_only_EGFRvIII_SGRP")
+
+# Loop through each data frame
+for (df_name in df_names) {
+  # Subset the desired columns
+  subset_df <- get(df_name)[c("p adj", "Variable", "comparison")]
+  
+  # Print the name of the current data frame
+  cat("Subset of", df_name, ":\n")
+  
+  # Print the subsetted data frame
+  print(subset_df)
+  
+  # If you want to assign the subsetted data frame back to the same name, uncomment the following line:
+  assign(df_name, subset_df, envir = .GlobalEnv)
+}
+
+
+
+## add rowAnnotation containing the significance level (< 0.05) of the respective contrast (underlying p.value is derived from tukey_HSD from above).
+hm.sig <- hm +rowAnnotation(
+  CD19_SGRP_CD19 = ifelse(CD19_SGRP_CD19$`p adj` < 0.05, "signif", "not.signif"),
+  EGFRvIII_CD19 = ifelse(EGFRvIII_CD19$`p adj` < 0.05, "signif", "not.signif"),
+  EGFRvIII_CD19_SGRP = ifelse(EGFRvIII_CD19_SGRP$`p adj` < 0.05, "signif", "not.signif"),
+  EGFRvIII_SGRP_CD19 = ifelse(EGFRvIII_SGRP_CD19$`p adj` < 0.05, "signif", "not.signif"),
+  EGFRvIII_SGRP_CD19_SGRP = ifelse(EGFRvIII_SGRP_CD19_SGRP$`p adj` < 0.05, "signif", "not.signif"),
+  EGFRvIII_SGRP_EGFRvIII = ifelse(EGFRvIII_SGRP_EGFRvIII$`p adj` < 0.05, "signif", "not.signif"),
+  Macrophage_only_CD19 = ifelse(Macrophage_only_CD19$`p adj` < 0.05, "signif", "not.signif"),
+  Macrophage_only_CD19_SGRP = ifelse(Macrophage_only_CD19_SGRP$`p adj` < 0.05, "signif", "not.signif"),
+  Macrophage_only_EGFRvIII = ifelse(Macrophage_only_EGFRvIII$`p adj` < 0.05, "signif", "not.signif"),
+  Macrophage_only_EGFRvIII_SGRP = ifelse(Macrophage_only_EGFRvIII_SGRP$`p adj` < 0.05, "signif", "not.signif"),
+  
+  col = list(CD19_SGRP_CD19 = c("not.signif" = "lightgrey", "signif" = "black"),
+             EGFRvIII_CD19 = c("not.signif" = "lightgrey", "signif" = "black"),
+             EGFRvIII_CD19_SGRP = c("not.signif" = "lightgrey", "signif" = "black"),
+             EGFRvIII_SGRP_CD19 = c("not.signif" = "lightgrey", "signif" = "black"),
+             
+             EGFRvIII_SGRP_CD19_SGRP = c("not.signif" = "lightgrey", "signif" = "black"),
+             EGFRvIII_SGRP_EGFRvIII = c("not.signif" = "lightgrey", "signif" = "black"),
+             Macrophage_only_CD19 = c("not.signif" = "lightgrey", "signif" = "black"),
+             Macrophage_only_CD19_SGRP = c("not.signif" = "lightgrey", "signif" = "black"),
+             Macrophage_only_EGFRvIII = c("not.signif" = "lightgrey", "signif" = "black"),
+             Macrophage_only_EGFRvIII_SGRP = c("not.signif" = "lightgrey", "signif" = "black")),
+  
+  simple_anno_size = unit(0.3, "cm"),
+  gap=unit(0.06, "cm"))
+
+
+
+pdf(file.path(plotDir, "Supp_Fig2g_significance_annotation.pdf"), width = 20, height = 10)
+hm.sig
+dev.off()
+
+
+devtools::session_info()
