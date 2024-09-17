@@ -1,0 +1,580 @@
+---
+title: "Fig4_immuno-oncology_targeted_proteomic_analysis"
+author: "Sabrina" 
+date: "`r doc_date()`" 
+output: BiocStyle::html_document 
+vignette: > 
+  %\VignetteIndexEntry{Fig4_immuno-oncology_targeted_proteomic_analysis} 
+  %\VignetteEngine{knitr::rmarkdown} 
+  %\VignetteEncoding{UTF-8} 
+--- 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE, message=FALSE, warning=FALSE)
+```
+```{r}
+rm(list=ls())
+
+## load libraries
+library(readxl)
+library(kableExtra)
+library(ComplexHeatmap)
+library(OlinkAnalyze)
+library(factoextra)
+library(ggpubr)
+library(tidyverse)
+library(RColorBrewer)
+library(limma)
+library(ggrepel)
+
+filter = dplyr::filter
+select = dplyr::select
+
+palette_treatment <- c(brewer.pal(3, "Set1"))
+
+col_treatment <- list(treatment = c("Healthy" = "white", "Vehicle" = "black", "Isotype" = "#FFD500", "aCD47" = "#F99C1C", "EGFRvIII CAR" = "#008FD5", "EGFRvIII CAR + aCD47" = "#009B49", "EGFRvIII-SGRP CAR" = "#0054A6", "CD19 CAR"= "#EE1C24", "CD19-SGRP CAR"= "#981B1E"))
+
+col_treatment_dataset <- list(treatment = c("Healthy" = "white", "Vehicle" = "black", "Isotype" = "#FFD500", "aCD47" = "#F99C1C", "EGFRvIII CAR" = "#008FD5", "EGFRvIII CAR + aCD47" = "#009B49", "EGFRvIII-SGRP CAR" = "#0054A6", "CD19 CAR"= "#EE1C24", "CD19-SGRP CAR"= "#981B1E"), dataset = c("nov2022" = "lightgrey", "june2023" = "darkgrey", "bridged" = "#3f3f3f")) 
+
+my_boxplot_colors <- scale_fill_manual(breaks = c("Healthy", "Vehicle", "Isotype", "aCD47", "EGFRvIII CAR", "EGFRvIII CAR + aCD47", "EGFRvIII-SGRP CAR", "CD19 CAR", "CD19-SGRP CAR"), 
+                       values=c("white", "black", "#FFD500", "#F99C1C", "#008FD5", "#009B49", "#0054A6", "#EE1C24", "#981B1E"))
+
+my_pca_colors <- scale_color_manual(breaks = c("Healthy", "Vehicle", "Isotype", "aCD47", "EGFRvIII CAR", "EGFRvIII CAR + aCD47", "EGFRvIII-SGRP CAR", "CD19 CAR", "CD19-SGRP CAR"), 
+                       values=c("#dbdad7", "black", "#FFD500", "#F99C1C", "#008FD5", "#009B49", "#0054A6", "#EE1C24", "#981B1E"))
+
+treatment_levels <- c("Healthy", "Vehicle", "Isotype", "aCD47", "CD19 CAR", "CD19-SGRP CAR", "EGFRvIII CAR", "EGFRvIII CAR + aCD47", "EGFRvIII-SGRP CAR")
+
+## Setting up directories
+
+dataDir <- "data"
+rdsDir <- "rds"
+plotDir <- "plots"
+```
+
+# Introduction
+
+human tumor cells injected in mice lacking Tcells, Bcells, NKcells, but have microglia and macrophages.  
+  
+  
+Plasma samples from immuno-compromised mice:
+
+  * 26 samples new samples + 12 bridging samples from previous analysis (November 2022)
+  * 7 groups
+    - Healthy
+    - Vehicle
+    - Isotype
+    - aCD47
+    - EGFRvIII CAR T
+    - EGFRvIII CAR T + aCD47
+    - EGFRvIII-SGRP CAR T
+
+# Dataset
+```{r}
+my_NPX_data0A <- read_NPX(file.path(dataDir, "Nov2022 Immuno Oncology_Martins_NPX.xlsx"))
+my_NPX_data0B <- read_NPX(file.path(dataDir, "Immuno Oncolog_Martins_NPX.xlsx"))
+
+
+metadata0 <- read_xlsx(file.path(dataDir, "Sample list TM.xlsx"), sheet = 1)%>%
+  dplyr::rename(SampleID=Name, treatment=Condition)%>%
+  arrange(SampleID)%>%
+  mutate(SampleID=gsub(" ","_",paste0("mouse_", SampleID), fixed=TRUE),
+         treatment = factor(treatment, levels = treatment_levels))
+
+my_NPX_dataA <- my_NPX_data0A%>%
+  mutate(SampleID=gsub("B_","", gsub(" ","_",paste0("mouse_", SampleID), fixed=TRUE)))%>%
+  left_join(metadata0, by="SampleID")%>%
+  mutate(under_LOD=ifelse(NPX<LOD, "yes", "no"),
+         dataset="nov2022",
+         treatment = factor(treatment, levels = treatment_levels))
+
+my_NPX_dataB <- my_NPX_data0B%>%
+  mutate(SampleID=gsub("B_","", gsub(" ","_",paste0("mouse_", SampleID), fixed=TRUE)))%>%
+  left_join(metadata0, by="SampleID")%>%
+  mutate(under_LOD=ifelse(NPX<LOD, "yes", "no"),
+         dataset="june2023",
+         treatment = factor(treatment, levels = treatment_levels))
+
+my_NPX_data <- bind_rows(my_NPX_dataA, my_NPX_dataB)
+
+table(metadata0$SampleID %in% my_NPX_data$SampleID)
+```
+
+# Plot NPX density before bridging normalization
+
+```{r}
+my_NPX_data %>%
+  mutate(Panel = gsub("Olink ", "", Panel)) %>%
+  ggplot(aes(x = NPX, fill = dataset)) +
+  geom_density(alpha = 0.4) +
+  olink_fill_discrete(coloroption = c("red", "darkblue")) +
+  set_plot_theme() +
+  ggtitle("Before bridging normalization: NPX distribution") +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        strip.text = element_text(size = 16),
+        legend.title = element_blank(),
+        legend.position = "top")
+```
+
+## before bridging
+```{r}
+#### Extract bridging samples
+
+overlapping_samples <-  data.frame(SampleID = intersect(my_NPX_dataA$SampleID, my_NPX_dataB$SampleID)) %>%  
+  filter(!str_detect(SampleID, "CONTROL_SAMPLE")) %>% #Remove control samples
+  pull(SampleID)
+
+
+npx_before_br <- my_NPX_dataA %>%
+  dplyr::filter(!str_detect(SampleID, "CONTROL_SAMPLE")) %>% #Remove control samples
+  dplyr::mutate(Type = if_else(SampleID %in% overlapping_samples,
+                        paste0("nov2022 Bridge"),
+                        paste0("nov2022 Sample"))) %>%
+  rbind({
+    my_NPX_dataB %>%
+      filter(!str_detect(SampleID, "CONTROL_SAMPLE")) %>% #Remove control samples %>% 
+      mutate(Type = if_else(SampleID %in% overlapping_samples,
+                            paste0("june2023 Bridge"),
+                            paste0("june2023 Sample"))) %>%
+      mutate(SampleID = if_else(SampleID %in% overlapping_samples,
+                                paste0(SampleID, "_new"),
+                                SampleID))
+  })
+
+md_before_br <- npx_before_br%>%
+  select(SampleID, treatment, dataset, Type, `Color code`)%>%
+  unique()%>%
+  arrange(SampleID)
+
+```
+
+## PCA before bridging
+```{r}
+NPX_noNA <-npx_before_br%>%
+  dplyr::select(SampleID, Assay, NPX)%>%
+  spread(Assay,NPX)%>%
+  select_if(~ !any(is.na(.)))%>%
+  arrange(SampleID)%>%
+  column_to_rownames("SampleID") 
+
+all.equal(rownames(NPX_noNA), md_before_br$SampleID)
+
+pca <- prcomp(NPX_noNA, scale = T)  
+
+fviz_eig(pca) 
+
+fviz_pca_ind(pca, axes = c(1, 2), label="none", habillage = md_before_br$Type,
+                       addEllipses=TRUE, ellipse.level=0.95, pointsize = 2,
+             invisible="quali")
+```
+
+
+### PCA november 2022
+```{r}
+NPX_noNA1 <-NPX_noNA[rownames(NPX_noNA) %in% filter(npx_before_br, dataset=="nov2022")$SampleID,]
+
+md_before_br1 <- md_before_br%>%
+  filter(dataset=="nov2022")
+
+all.equal(rownames(NPX_noNA1), md_before_br1$SampleID)
+
+pca1 <- prcomp(NPX_noNA1, scale = T)  # x is a numeric matrix (row names = patient, colnames= molecule) 
+
+fviz_eig(pca1) 
+
+fviz_pca_ind(pca1, axes = c(1, 2), label="none", habillage = md_before_br1$Type,
+                       addEllipses=TRUE, ellipse.level=0.95, pointsize = 2,
+             invisible="quali")
+```
+
+### PCA june 2023
+```{r}
+NPX_noNA2 <-NPX_noNA[rownames(NPX_noNA) %in% filter(npx_before_br, dataset=="june2023")$SampleID,]
+
+md_before_br2 <- md_before_br%>%
+  filter(dataset=="june2023")
+
+all.equal(rownames(NPX_noNA2), md_before_br2$SampleID)
+
+pca2 <- prcomp(NPX_noNA2, scale = T)  # x is a numeric matrix (row names = patient, colnames= molecule) 
+
+fviz_eig(pca2) 
+
+fviz_pca_ind(pca2, axes = c(1, 2), label="none", habillage = md_before_br2$Type,
+                       addEllipses=TRUE, ellipse.level=0.95, pointsize = 2,
+             invisible="quali")
+
+```
+
+## distribution
+```{r}
+npx_before_br %>%
+  mutate(Panel = gsub("Olink ", "", Panel)) %>%
+  ggplot(aes(x = NPX, group = SampleID, fill=dataset)) +
+  geom_density(alpha = 0.4) +
+  set_plot_theme() +
+  ggtitle("Before bridging normalization: NPX distribution") +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        strip.text = element_text(size = 16),
+        legend.title = element_blank(),
+        legend.position = "top")
+
+```
+
+
+# Perform bridging between two data sets
+reference dataset = november2022
+```{r}
+overlap_samples_list <- list("DF1" = overlapping_samples,
+                             "DF2" = overlapping_samples)
+
+# Perform Bridging normalization
+npx_br_data <- olink_normalization_bridge(project_1_df = my_NPX_dataA,
+                                          project_2_df = my_NPX_dataB,
+                                          bridge_samples = overlap_samples_list,
+                                          project_1_name = "nov2022",
+                                          project_2_name = "june2023",
+                                          project_ref_name = "nov2022")
+# dplyr::glimpse(npx_br_data)
+
+npx_br_data %>%
+  mutate(Panel = gsub("Olink ", "", Panel)) %>%
+  ggplot2::ggplot(ggplot2::aes(x = NPX, fill = dataset)) +
+  ggplot2::geom_density(alpha = 0.4) +
+  olink_fill_discrete(coloroption = c("red", "darkblue")) +
+  set_plot_theme() +
+  ggplot2::ggtitle("After bridging normalization: NPX distribution") +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        strip.text = element_text(size = 16),
+        legend.title = element_blank(),
+        legend.position = "top")
+```
+
+```{r}
+npx_after_br <- npx_br_data %>%
+  dplyr::mutate(Type = ifelse(SampleID %in% overlapping_samples, 
+                              paste(Project, "Bridge"),
+                              paste(Project, "Sample")))%>%
+  dplyr:::mutate(SampleID.orig = SampleID, dataset,
+                 SampleID = paste0(SampleID, "_", dataset))
+
+
+NPX_noNA <- npx_after_br%>%
+  dplyr::select(SampleID, Assay, NPX)%>%
+  spread(Assay, NPX)%>%
+  select_if(~ !any(is.na(.)))%>%
+  arrange(SampleID)%>%
+  column_to_rownames("SampleID") 
+
+md_after_br <- npx_after_br%>%
+  select(SampleID, SampleID.orig, treatment, dataset, Type, `Color code`)%>%
+  unique()%>%
+  arrange(SampleID)
+
+```
+
+
+# Whole dataset overview
+
+## Plot densities
+```{r}
+NPX <-npx_after_br%>%
+  dplyr::select(SampleID, Assay, NPX)%>%
+  spread(Assay,NPX)%>%
+  arrange(SampleID)%>%
+  column_to_rownames(var = "SampleID") 
+
+all.equal(rownames(NPX), md_after_br$SampleID)
+
+plotDensities(t(NPX), legend=F)
+plotDensities(t(NPX), legend = "topright", group= md_after_br$treatment)
+```
+
+
+## create unique data point per mouse
+i.e: use mean of bridged samples
+
+```{r}
+npx_after_br_mean <- npx_after_br%>%
+  group_by(SampleID.orig, Assay)%>%
+  mutate(NPX.ogig=NPX,
+         NPX=mean(NPX))%>%
+  ungroup()%>%
+  distinct(SampleID.orig, Assay, .keep_all = TRUE)%>%
+  mutate(SampleID=ifelse(SampleID.orig %in% overlapping_samples, SampleID.orig, SampleID),
+         dataset=ifelse(SampleID.orig %in% overlapping_samples, "bridged", dataset))
+
+NPX_mean <-npx_after_br_mean%>%
+  dplyr::select(SampleID, Assay, NPX)%>%
+  spread(Assay,NPX)%>%
+  arrange(SampleID)%>%
+  column_to_rownames(var = "SampleID") 
+
+md_after_br_mean <- md_after_br%>%
+  mutate(SampleID=ifelse(SampleID.orig %in% overlapping_samples, SampleID.orig, SampleID),
+         dataset=ifelse(SampleID.orig %in% overlapping_samples, "bridged", dataset))%>%
+  distinct(SampleID.orig, .keep_all = TRUE)
+
+plotDensities(t(NPX_mean), legend=F)
+plotDensities(t(NPX_mean), legend = "topright", group= md_after_br_mean$treatment)
+```
+
+# Normalisation 
+
+## using cyclic loess (as suggested by Julien)
+```{r}
+NPX.norm_mean <- t(normalizeBetweenArrays(t(NPX_mean), method = "cyclicloess"))
+
+all.equal(rownames(NPX.norm_mean), md_after_br_mean$SampleID)
+
+plotDensities(t(NPX.norm_mean), legend=F)
+plotDensities(t(NPX.norm_mean), legend = "topright", group= md_after_br_mean$treatment)
+
+NPX.norm_mean.lf <- data.frame(NPX.norm_mean, check.names = F)%>%
+  rownames_to_column("SampleID")%>%
+  pivot_longer(values_to = "NPX.norm", names_to = "Assay", !c(SampleID))
+
+npx_after_br_mean <- npx_after_br_mean%>%
+  left_join(NPX.norm_mean.lf, by=c("SampleID", "Assay"))%>%
+  relocate(NPX.norm, .after=NPX)
+
+rm(NPX.norm_mean.lf)
+```
+
+
+### Heatmap showing all genes after normalisation
+
+```{r, fig.height=12}
+# annotation
+lbls_col = gsub("_2$","", md_after_br_mean$SampleID.orig)
+column_ha = HeatmapAnnotation(
+  treatment = md_after_br_mean$treatment,
+  dataset = md_after_br_mean$dataset,
+  col = col_treatment_dataset, annotation_name_side="left")
+
+## annotation missing freq
+miss.per.dataset_mean<-npx_after_br_mean%>%
+  group_by(dataset, Assay)%>%
+  summarise(MissingFreq=MissingFreq)%>%
+  unique()%>%
+  pivot_wider(names_from = dataset, values_from = MissingFreq)%>%
+  type.convert()
+
+
+all.equal(miss.per.dataset_mean$Assay, colnames(NPX.norm_mean))
+
+miss.per.dataset_mean<-miss.per.dataset_mean[match(colnames(NPX.norm_mean), miss.per.dataset_mean$Assay),]
+
+all.equal(miss.per.dataset_mean$Assay, colnames(NPX.norm_mean))
+
+row_ha = rowAnnotation(
+  MissingFreq_june2023 = anno_barplot(miss.per.dataset_mean$june2023, gp = gpar(fill = col_treatment_dataset$dataset["june2023"])), 
+  MissingFreq_nov2022 = anno_barplot(miss.per.dataset_mean$nov2022, gp = gpar(fill = col_treatment_dataset$dataset["nov2022"])), annotation_name_side="top")
+
+# heatmap
+hm <- Heatmap(t(scale(NPX.norm_mean, center = T)),
+               column_labels = lbls_col,
+               bottom_annotation = column_ha,
+               right_annotation = row_ha,
+               na_col = "black",
+               # col = col_fun,
+               name = "Z-Score",
+               column_names_gp = grid::gpar(fontsize = 10),
+               row_names_gp = grid::gpar(fontsize = 7))
+hm
+
+pdf(file.path(plotDir, "Supp_Fig5d_Normalized_IO_prot_in_plasma.pdf"), height =10, width=10)
+hm
+dev.off()
+```
+
+
+### PCA after normalisation
+remove NAs
+```{r}
+NPX.norm_noNA_mean <- as.data.frame(NPX.norm_mean)%>%
+  select_if(~ !any(is.na(.)))
+
+all.equal(rownames(NPX.norm_noNA_mean), md_after_br_mean$SampleID)
+
+pca <- prcomp(NPX.norm_noNA_mean, scale = T) 
+summary(pca)  
+
+fviz_eig(pca) 
+
+fviz_pca_ind(pca, axes = c(1, 2), label="none", habillage = md_after_br_mean$treatment,
+                       addEllipses=TRUE, ellipse.level=0.95, pointsize = 2, invisible="quali")+
+  my_pca_colors+
+  my_boxplot_colors
+
+pca1 <- as.data.frame(pca$x)%>%
+  rownames_to_column("SampleID")%>%
+  left_join(md_after_br_mean)
+
+pdf(file.path(plotDir, "Fig4a_PCA_plasma_markers_distrib.pdf"), width=10, height = 6)
+fviz_pca_ind(pca, axes = c(1, 2), label="none", habillage = md_after_br_mean$treatment,
+                       addEllipses=TRUE, ellipse.level=0.80, pointsize = 2, invisible="quali")+
+  my_pca_colors+
+  my_boxplot_colors
+
+ggplot(pca1, aes(PC1,PC2))+
+  theme_bw()+
+  geom_point(aes(color=treatment, shape=treatment), size=3)+
+  stat_ellipse(aes(color=treatment, fill=treatment), geom = "polygon", alpha=0.2)+
+  geom_hline(yintercept=0, linetype="dashed")+
+  geom_vline(xintercept=0, linetype="dashed")+
+  my_pca_colors+
+  my_boxplot_colors+
+  scale_shape_manual(breaks = c("Healthy", "Vehicle", "Isotype", "aCD47", "EGFRvIII CAR", "EGFRvIII CAR + aCD47", "EGFRvIII-SGRP CAR", "CD19 CAR", "CD19-SGRP CAR"), values=c(16, 17, 18, 0, 6, 8, 5, 7, 15))
+
+dev.off()
+```      
+
+
+# Differential expression analysis
+```{r}
+all.equal(md_after_br_mean$SampleID, rownames(NPX.norm_mean))
+
+moma <- model.matrix(~ 0 + treatment + dataset, data=md_after_br_mean)
+
+colnames(moma) <- gsub("[^[:alnum:]]+", ".", gsub("treatment", "", colnames(moma), fixed = T))
+
+## Contrast matrix
+contrasts.matrix <- makeContrasts(
+  EGFRvIII.CAR_vs_EGFRvIII.CAR.aCD47 =     EGFRvIII.CAR - EGFRvIII.CAR.aCD47,
+  EGFRvIII.CAR_vs_EGFRvIII.SGRP.CAR =      EGFRvIII.CAR - EGFRvIII.SGRP.CAR,
+  # EGFRvIII.CAR_vs_CD19.SGRP.CAR =          EGFRvIII.CAR - CD19.SGRP.CAR,
+  EGFRvIII.CAR_vs_CD19.CAR =               EGFRvIII.CAR - CD19.CAR,
+  CD19.SGRP.CAR_vs_EGFRvIII.SGRP.CAR =     CD19.SGRP.CAR - EGFRvIII.SGRP.CAR,
+  CD19.CAR_vs_CD19.SGRP.CAR =              CD19.CAR - CD19.SGRP.CAR,
+  EGFRvIII.CAR.aCD47_vs_EGFRvIII.SGRP.CAR =      EGFRvIII.CAR.aCD47 - EGFRvIII.SGRP.CAR,
+  aCD47_vs_EGFRvIII.CAR.aCD47 =      aCD47 - EGFRvIII.CAR.aCD47,
+  levels=moma)
+
+
+## limma-trend
+fit <- lmFit(t(NPX.norm_mean), moma)
+fit2 <- contrasts.fit(fit, contrasts.matrix)
+fit2 <- eBayes(fit2, trend=T, robust=F) ## robust=TRUE avoids shrinkage of large variances
+table(de <- decideTests(fit2, p.value = 0.1))
+```
+
+### EGFRvIII vs EGFRvIII-SGRP
+```{r}
+results <- topTable(fit2, p.value = 1, number = Inf, coef="EGFRvIII.CAR_vs_EGFRvIII.SGRP.CAR")
+
+kable(results) %>% 
+  kable_styling(position = "center", bootstrap_options = c("striped", "hover")) %>% 
+  scroll_box(width = "800px", height = "400px")
+```
+
+```{r}
+# Categorize Results based on P-value & FDR for plotting
+results$Color <- "NS or FC < 0.5"
+results$Color[results$P.Value < 0.05] <- "P < 0.05"
+results$Color[results$adj.P.Val < 0.05] <- "adj.P.Val < 0.05"
+results$Color[results$adj.P.Val < 0.001] <- "adj.P.Val < 0.001"
+results$Color[abs(results$logFC) < 0.5] <- "NS or FC < 0.5"
+results$Color <- factor(results$Color,
+                        levels = c("NS or FC < 0.5", "P < 0.05",
+                                   "adj.P.Val < 0.05", "adj.P.Val < 0.001"))
+
+p1 <- ggplot(results,
+       aes(x = logFC, y = -log10(P.Value),
+           color = Color, label = rownames(results))) +
+    geom_vline(xintercept = c(0.5, -0.5), lty = "dashed") +
+    geom_hline(yintercept = -log10(0.05), lty = "dashed") +
+    geom_point() +
+    labs(x = "Enriched in EGFRvIII-SGRP <- log2(FC) -> Enriched in EGFRvIII",
+         y = "Significance, -log10(P)",
+         color = "Significance") +
+    scale_color_manual(values = c(`adj.P.Val < 0.001` = "dodgerblue",
+                                  `adj.P.Val < 0.05` = "lightblue",
+                                  `P < 0.05` = "orange2",
+                                  `NS or FC < 0.5` = "gray"),
+                       guide = guide_legend(override.aes = list(size = 4))) +
+    scale_y_continuous(expand = expansion(mult = c(0,0.05))) +
+    geom_text_repel(min.segment.length = 0.3) +
+    theme_bw(base_size = 16) +
+    theme(legend.position = "bottom")
+
+
+p1
+
+pdf(file.path(plotDir, "Fig4b_volcano_EGFRvIII_CAR_vs_EGFRvIII_SGRP_CAR.pdf"))
+p1
+dev.off()
+```
+
+
+# signifiantly DE prot
+
+```{r}
+interest.prot2 <- unique(rownames(topTable(fit2, p.value = 0.05, number = Inf, coef=c(1:7))))
+
+comparisons <- list(c("EGFRvIII CAR", "EGFRvIII CAR + aCD47"), 
+                       c("EGFRvIII CAR", "EGFRvIII-SGRP CAR"), 
+                       c("EGFRvIII CAR", "CD19 CAR"), 
+                       c("CD19-SGRP CAR", "EGFRvIII-SGRP CAR"), 
+                       c("CD19 CAR", "CD19-SGRP CAR"), 
+                       c("EGFRvIII CAR + aCD47", "EGFRvIII-SGRP CAR"), 
+                       c("aCD47", "EGFRvIII CAR + aCD47"))
+
+data <- npx_after_br_mean%>%
+  filter(Assay %in% interest.prot2,
+         !is.na(NPX))%>%
+  mutate(Assay=factor(Assay, levels = interest.prot2),
+         treatment=factor(treatment, levels = treatment_levels))
+
+stat <- data%>%
+  group_by(Assay)%>%
+  rstatix::wilcox_test(NPX.norm~treatment,
+                       comparisons = comparisons)%>%
+  rstatix::add_xy_position()%>%
+  mutate(grp=paste0(group1, "_", group2))%>%
+  group_by(grp)%>%
+  mutate(p.adj=p.adjust(p, method = "BH", n = length(p)),
+         p.adj.signif=ifelse(p.adj<0.001, "***", ifelse(p.adj<0.01, "**", ifelse(p.adj<=0.05, "*", "ns"))))%>%
+  ungroup()
+  
+
+write.csv(select(stat, -groups), file.path(plotDir,"stat.csv"), row.names = F )
+
+p2 <- ggplot(data)+
+  theme_bw()+
+  geom_boxplot(aes(x=treatment, y=NPX.norm, fill=treatment), outlier.shape = NA, alpha=0.7)+
+  my_boxplot_colors+
+  geom_jitter(aes(x=treatment, y=NPX.norm, color=under_LOD), alpha=0.8)+
+  scale_color_manual(values=c("black", "#999999"))+
+  theme(axis.text.x=element_blank(), #remove x axis labels
+        axis.ticks.x=element_blank())+ #remove x axis ticks
+  ggtitle("normalised values")+
+  facet_wrap(~Assay, scales="free", ncol=3)
+
+p2
+
+pdf(file.path(plotDir, "Fig4c_norm_exp_DE_plasma_markers.pdf"), width = 11, height = 13)
+p2
+dev.off()
+```
+
+# IL6 plasma expression at d15
+```{r}
+p3 <- ggplot(filter(npx_after_br_mean, Assay=="IL6"))+
+  theme_bw()+
+  geom_boxplot(aes(x=treatment, y=NPX.norm, fill=treatment), outlier.shape = NA, alpha=0.7)+
+  my_boxplot_colors+
+  geom_jitter(aes(x=treatment, y=NPX.norm, color=under_LOD), alpha=0.8)+
+  scale_color_manual(values=c("black", "#999999"))+
+  theme(axis.text.x=element_blank(), #remove x axis labels
+        axis.ticks.x=element_blank())+ #remove x axis ticks
+  ggtitle("IL6 normalised values")
+
+p3
+
+pdf(file.path(plotDir, "Supp_Fig7c_Plasma_IL6.pdf"))
+p3
+dev.off()
+```
+
