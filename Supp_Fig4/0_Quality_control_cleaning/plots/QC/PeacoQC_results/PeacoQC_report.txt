@@ -1,0 +1,21 @@
+Filename	Nr. Measurements before cleaning	Nr. Measurements after cleaning	% Full analysis	Analysis by	% IT analysis	% MAD analysis	% Consecutive cells	MAD	IT limit	Consecutive bins	Events per bin	Increasing/Decreasing channel
+file112eb4b7f0b44	69306	68500	1.16295847401379	all	0.080801085043142	1.16295847401379	0	6	0.55	5	500	No increasing or decreasing effect
+file112eb1bcc415	54982	54982	0	all	0	0	0	6	0.55	5	500	No increasing or decreasing effect
+file112ebfed3f97	25617	25617	0	all	NA	0	0	6	0.55	5	500	No increasing or decreasing effect
+file112eb20e9daac	30501	30501	0	all	NA	0	0	6	0.55	5	500	No increasing or decreasing effect
+file112eb59136315	52553	52500	0.100850569900862	all	0	0.100850569900862	0	6	0.55	5	500	No increasing or decreasing effect
+file112eb7ce2563	60089	60089	0	all	0	0	0	6	0.55	5	500	No increasing or decreasing effect
+file112eb6ef88a95	71227	71227	0	all	0	0	0	6	0.55	5	500	No increasing or decreasing effect
+file112eb7f52751d	120261	120250	0.00914677243661702	all	0.00914677243661702	0	0	6	0.55	5	500	No increasing or decreasing effect
+file112eb7e870438	70857	70857	0	all	0	0	0	6	0.55	5	500	No increasing or decreasing effect
+file112eb5226396d	99630	99630	0	all	0	0	0	6	0.55	5	500	No increasing or decreasing effect
+file112eb4b844d3d	38526	37750	2.01422416030732	all	0	2.01422416030732	0	6	0.55	5	500	No increasing or decreasing effect
+file112eb5aeb0686	27501	27501	0	all	NA	0	0	6	0.55	5	500	No increasing or decreasing effect
+file112eb7bf9760b	45435	44935	1.1004732034775	all	1.1004732034775	0	0	6	0.55	5	500	No increasing or decreasing effect
+file112eb36b50bc3	41057	41057	0	all	0	0	0	6	0.55	5	500	No increasing or decreasing effect
+file112eb28174b44	47395	36645	22.6817174807469	all	20.5717902732356	0	5.27481801877835	6	0.55	5	500	No increasing or decreasing effect
+file112eb114e71ec	29313	29313	0	all	NA	0	0	6	0.55	5	500	No increasing or decreasing effect
+file112eb351945d4	39899	39399	1.25316423970526	all	0	1.25316423970526	0	6	0.55	5	500	No increasing or decreasing effect
+file112ebe377c88	53418	53418	0	all	0	0	0	6	0.55	5	500	No increasing or decreasing effect
+file112eb5cd0cc02	40682	40682	0	all	0	0	0	6	0.55	5	500	No increasing or decreasing effect
+file112eb1001c6e9	39182	39182	0	all	0	0	0	6	0.55	5	500	No increasing or decreasing effect

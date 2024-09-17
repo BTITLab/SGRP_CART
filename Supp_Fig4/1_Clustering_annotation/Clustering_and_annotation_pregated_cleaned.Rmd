@@ -1,0 +1,190 @@
+---
+title: "Clustering_and_annotation_pregated_cleaned"
+author: "Deniz" 
+date: "`r doc_date()`" 
+output: BiocStyle::html_document 
+vignette: > 
+  %\VignetteIndexEntry{1a_OpenCyto_clustering_pre_gated_CD45_cleaned} 
+  %\VignetteEngine{knitr::rmarkdown} 
+  %\VignetteEncoding{UTF-8} 
+--- 
+
+Clean, set-up environment and load libraries
+```{r, libraries}
+rm(list = ls())
+
+library(kableExtra)
+library(CATALYST)
+library(cowplot)
+library(RColorBrewer)
+
+
+script_dir <- dirname(rstudioapi::getActiveDocumentContext()$path)
+setwd(script_dir) 
+workDir <- script_dir
+
+data_folder <- file.path(script_dir, "..", "data")
+rdsDir <- file.path(script_dir, "..", "0_Quality_control_cleaning/rds")
+plots_folder <- "plots"
+
+md <- read.csv(file.path(data_folder, "metadata.csv"))
+md$file_name <- gsub(".*291", "291", x = md$file_name)
+
+myPalette <-  c('#e6194b', '#4363d8', '#3cb44b', '#f58231', '#ffe119', '#000000', '#CD00CD', '#aaffc3', '#98BFDB', '#e6beff', '#9a6324', '#fffac8', '#808080', '#000075', '#bcf60c')
+
+palette_11 <- brewer.pal(10, "Paired")
+```
+
+```{r}
+# loead sce-object
+sce <- readRDS(file.path(rdsDir, "sce_pregated_cleaned.rds"))
+```
+
+# Cell population identification with FlowSOM and ConsensusClusterPlus
+
+```{r}
+features1 <- type_markers(sce)[-c(3, 6, 13, 17)] # remove tumor markers as we are looking at immune cells only
+
+sce1 <- cluster(sce, features = features1,
+    xdim = 10, ydim = 10, maxK = 25, seed = 1234)
+
+
+# saveRDS(sce1, file.path(rdsDir,"sce1_maxK25.rds"))
+
+# sce1 <- readRDS(file.path(rdsDir,"sce1_maxK25.rds"))
+```
+
+
+# Visual representation with t-SNE
+```{r}
+features <- type_markers(sce1)[-c(3, 6, 13, 17)] # do not include tumor markers as we are looking at immune cells only
+
+set.seed(1234)
+sce1 <- runDR(sce1, dr = "TSNE", cells = 500, features = features)
+
+# saveRDS(sce1, file.path(rdsDir, "sce1_maxK25_TSNE_.rds"))
+# sce1 <- readRDS(file.path(rdsDir, "sce1_maxK25_TSNE_.rds"))
+
+## Visualize marker expression in each cluster
+lapply(features1, function(x) { 
+  plotDR(sce1, "TSNE", color_by = x)
+  })
+
+## TSNE per condition
+TSNE.condition <- plotDR(sce1, "TSNE", color_by = "meta22", facet_by = "condition") ## Facet per condition
+TSNE.condition
+
+# pdf(file.path(script_dir, "plots/clustering_meta22_per_condition_TSNE.pdf"))
+# TSNE.condition
+# dev.off()
+```
+
+Cluster Annotation
+```{r}
+features1 <- type_markers(sce1)[-c(3, 6, 13, 17)] # do not include tumor markers as we are looking at immune cells only!
+
+# Annotation based on marker expression within the clusters
+tsne.condition <- plotDR(sce1, "TSNE", color_by = "meta22", facet_by = "condition")
+tsne.markers1 <- plotDR(sce1, dr = "TSNE", color_by = features1[1:5])
+tsne.markers2 <- plotDR(sce1, dr = "TSNE", color_by = features1[6:10])
+tsne.markers3 <- plotDR(sce1, dr = "TSNE", color_by = features1[11:14])
+tsne.markers4 <- plotDR(sce1, dr = "TSNE", color_by = features1[15:20])
+ce22<- plotClusterExprs(sce1, k = "meta22", features = "type")
+ce22
+
+pdf(file.path(script_dir, "plots/Annotation_TSNE.pdf"))
+tsne.condition
+tsne.markers1
+tsne.markers2
+tsne.markers3
+tsne.markers4
+ce22
+dev.off()
+
+
+# Annotate and merge clusters
+# 1 = Microglia
+# 2 = Microglia
+# 3 = unknown
+# 4 = Microglia
+# 5 = Microglia
+# 6 = Boder−associated Macrophages
+# 7 = activated_Microglia
+# 8 = MoMac
+# 9 = CD206+_Microglia
+# 10 = MoMac
+# 11 = CD206+_Microglia
+# 12 = activated_Microglia
+# 13 = Tcells
+# 14 = Boder−associated Macrophages
+# 15 = unknown 
+# 16 = Tcells
+# 17 = moDC/cDC1
+# 18 = Tcells
+# 19 = CD25.hi_CD4_Tcells
+# 20 = Neutrophils
+# 21 = moDC/cDC1
+# 22 = MoMac
+
+
+# extract unique cluster codes from the metadata of the SingleCellExperiment object 'sce1'.
+cluster.codes <- unique(dplyr::select(sce1@metadata$cluster_codes, meta22))
+
+# Create a data frame that maps 'original clusters'  to 'new_clusters' (= merged cluster identities).
+merging_table <- data.frame(
+  original_cluster = seq_along(1:22),
+  new_cluster = c("Microglia", "Microglia", "unknown", "Microglia", "Microglia", "Boder−associated Macrophages", "activated_Microglia", "MoMac", "CD206+_Microglia", "MoMac", "CD206+_Microglia", "activated_Microglia", "Tcells", "Boder−associated Macrophages", "unknown", "Tcells", "moDC/cDC1", "Tcells", "CD25.hi_CD4_Tcells", "Neutrophils", "moDC/cDC1", "MoMac"))
+merging_table$new_cluster <- factor(merging_table$new_cluster) # clusters as factor
+
+# save merging_table
+write.csv(merging_table, file.path(data_folder, "merging_table.csv"))
+
+# apply manual merging                                                   
+sce1 <- mergeClusters(sce1, k = "meta22",
+    table = merging_table, id = "merging", overwrite = TRUE)
+
+sce1@metadata$cluster_codes # cluster annotation present here
+
+# save merged and annotated sce
+readr::write_rds(sce1, file.path(rdsDir, "sce_maxK25_ManualMerging.rds"))
+
+
+# t-SNE after merging
+features1 <- type_markers(sce1)[-c(3, 6, 13, 17)]
+
+tsne.condition <- plotDR(sce1, "TSNE", color_by = "merging", facet_by = "condition")
+
+pdf(file.path(script_dir, "plots/Annotation_TSNE_merged.pdf"), width = 12)
+tsne.condition
+dev.off()
+
+```
+
+
+### Heatmap
+```{r}
+plotExprHeatmap(sce1, features = type_markers(sce1)[-c(3,6, 13, 17)], by=c("cluster_id"),
+                        k="merging",
+                        scale = "last", bars = T, perc = T,
+                        row_clust = F, col_clust = F, k_pal = palette_11)
+
+
+pdf("plots/Supp_Fig4e_Cluster-defining_marker_expression.pdf", height = 10, width = 15)
+plotExprHeatmap(sce1, features = type_markers(sce1)[-c(3,6, 13, 17)], by=c("cluster_id"),
+                        k="merging",
+                        scale = "last", bars = T, perc = T,
+                        row_clust = F, col_clust = F,
+                        k_pal = palette_11)
+
+dev.off()
+```
+
+```{r}
+pp4 <- plotAbundances(sce1, k = "merging", by = "sample_id", group_by = "condition", col_clust = FALSE, k_pal = palette_11)
+pp4
+
+
+pdf("plots/Supp_Fig4f_Relative_Pop_abundance_merged_clusters.pdf", height = 10, width = 15)
+pp4
+dev.off()
+```
