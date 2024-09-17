@@ -1,0 +1,16 @@
+full_file_name,file_name,sample_id,condition,condition.full,patient_id
+/Volumes/BTIT$/Sabrina/Tomas/Aurora_EGFRvIII_09_06_2023/data/CD45_gated fcs-files/CD45_pregated_export_A1 V_1002-NM_CD45+.fcs,CD45_pregated_export_A1 V_1002-NM_CD45+.fcs,V_1002-NM,V,Vehicle,1002-NM
+/Volumes/BTIT$/Sabrina/Tomas/Aurora_EGFRvIII_09_06_2023/data/CD45_gated fcs-files/CD45_pregated_export_A2 E_1004-NM_CD45+.fcs,CD45_pregated_export_A2 E_1004-NM_CD45+.fcs,E_1004-NM,E,EGFRvIII CAR,1004-NM
+/Volumes/BTIT$/Sabrina/Tomas/Aurora_EGFRvIII_09_06_2023/data/CD45_gated fcs-files/CD45_pregated_export_A3 ES_1002-2R_CD45+.fcs,CD45_pregated_export_A3 ES_1002-2R_CD45+.fcs,ES_1002-2R,ES,EGFRvIII-SGRP CAR,1002-2R
+/Volumes/BTIT$/Sabrina/Tomas/Aurora_EGFRvIII_09_06_2023/data/CD45_gated fcs-files/CD45_pregated_export_B1 V_1002-1R_CD45+.fcs,CD45_pregated_export_B1 V_1002-1R_CD45+.fcs,V_1002-1R,V,Vehicle,1002-1R
+/Volumes/BTIT$/Sabrina/Tomas/Aurora_EGFRvIII_09_06_2023/data/CD45_gated fcs-files/CD45_pregated_export_B2 E_1004-1R_CD45+.fcs,CD45_pregated_export_B2 E_1004-1R_CD45+.fcs,E_1004-1R,E,EGFRvIII CAR,1004-1R
+/Volumes/BTIT$/Sabrina/Tomas/Aurora_EGFRvIII_09_06_2023/data/CD45_gated fcs-files/CD45_pregated_export_B3 ES_1004-2R_CD45+.fcs,CD45_pregated_export_B3 ES_1004-2R_CD45+.fcs,ES_1004-2R,ES,EGFRvIII-SGRP CAR,1004-2R
+/Volumes/BTIT$/Sabrina/Tomas/Aurora_EGFRvIII_09_06_2023/data/CD45_gated fcs-files/CD45_pregated_export_C1 V_1002-1L_CD45+.fcs,CD45_pregated_export_C1 V_1002-1L_CD45+.fcs,V_1002-1L,V,Vehicle,1002-1L
+/Volumes/BTIT$/Sabrina/Tomas/Aurora_EGFRvIII_09_06_2023/data/CD45_gated fcs-files/CD45_pregated_export_C2 E_1004-1L_CD45+.fcs,CD45_pregated_export_C2 E_1004-1L_CD45+.fcs,E_1004-1L,E,EGFRvIII CAR,1004-1L
+/Volumes/BTIT$/Sabrina/Tomas/Aurora_EGFRvIII_09_06_2023/data/CD45_gated fcs-files/CD45_pregated_export_C3 ES_1004-2L_CD45+.fcs,CD45_pregated_export_C3 ES_1004-2L_CD45+.fcs,ES_1004-2L,ES,EGFRvIII-SGRP CAR,1004-2L
+/Volumes/BTIT$/Sabrina/Tomas/Aurora_EGFRvIII_09_06_2023/data/CD45_gated fcs-files/CD45_pregated_export_D1 V_1005_2L_CD45+.fcs,CD45_pregated_export_D1 V_1005_2L_CD45+.fcs,V_1005_2L,V,Vehicle,1005-2L
+/Volumes/BTIT$/Sabrina/Tomas/Aurora_EGFRvIII_09_06_2023/data/CD45_gated fcs-files/CD45_pregated_export_D2 E_1005-1R_CD45+.fcs,CD45_pregated_export_D2 E_1005-1R_CD45+.fcs,E_1005-1R,E,EGFRvIII CAR,1005-1R
+/Volumes/BTIT$/Sabrina/Tomas/Aurora_EGFRvIII_09_06_2023/data/CD45_gated fcs-files/CD45_pregated_export_D3 ES_1005-NM_CD45+.fcs,CD45_pregated_export_D3 ES_1005-NM_CD45+.fcs,ES_1005-NM,ES,EGFRvIII-SGRP CAR,1005-NM
+/Volumes/BTIT$/Sabrina/Tomas/Aurora_EGFRvIII_09_06_2023/data/CD45_gated fcs-files/CD45_pregated_export_E1 V_1005-1R1L_CD45+.fcs,CD45_pregated_export_E1 V_1005-1R1L_CD45+.fcs,V_1005-1R1L,V,Vehicle,1005-1R1L
+/Volumes/BTIT$/Sabrina/Tomas/Aurora_EGFRvIII_09_06_2023/data/CD45_gated fcs-files/CD45_pregated_export_E2 E_1005-1L_CD45+.fcs,CD45_pregated_export_E2 E_1005-1L_CD45+.fcs,E_1005-1L,E,EGFRvIII CAR,1005-1L
+/Volumes/BTIT$/Sabrina/Tomas/Aurora_EGFRvIII_09_06_2023/data/CD45_gated fcs-files/CD45_pregated_export_E3 ES_1005-2R_CD45+.fcs,CD45_pregated_export_E3 ES_1005-2R_CD45+.fcs,ES_1005-2R,ES,EGFRvIII-SGRP CAR,1005-2R

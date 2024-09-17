@@ -1,0 +1,29 @@
+fcs_colname,fcs_colname_2,antigen,surface_intracell,marker_class
+FSC-A,FSC-A,FSC-A,NA,NA
+FSC-H,FSC-H,FSC-H,NA,NA
+SSC-A,SSC-A,SSC-A,NA,NA
+SSC-B-A,SSC-B-A,SSC-B-A,NA,NA
+SSC-B-H,SSC-B-H,SSC-B-H,NA,NA
+SSC-H,SSC-H,SSC-H,NA,NA
+FJComp-AF-A,AF-A,AF-A,surface,state
+FJComp-APC-Fire 810-A,APC-Fire 810-A,P2ry12,surface,type
+FJComp-BV605-A,BV605-A,F4/80,surface,type
+FJComp-BUV737-A,BUV737-A,CD45,surface,type
+FJComp-BV510-A,BV510-A,CD11b,surface,type
+FJComp-PE-Cy7-A,PE-Cy7-A,CD11c,surface,type
+FJComp-NFBlue 610-70S-A,NFBlue 610-70S-A,MHCII,surface,type
+FJComp-APC-A,APC-A,Siglec-H,surface,type
+FJComp-BUV563-A,BUV563-A,Ly6G,surface,type
+FJComp-BV785-A,BV785-A,Ly6C,surface,type
+FJComp-BV711-A,BV711-A,MerTK,surface,type
+FJComp-PE-Cy5-A,PE-Cy5-A,CD86,surface,type
+FJComp-BV421-A,BV421-A,XCR1,surface,type
+FJComp-Alexa Fluor 488-A,Alexa Fluor 488-A,Axl,surface,type
+FJComp-Alexa Fluor 700-A,Alexa Fluor 700-A,CD206,surface,type
+FJComp-BUV496-A,BUV496-A,CD4,surface,state
+FJComp-BV650-A,BV650-A,CD8a,surface,state
+FJComp-PerCP-A,PerCP-A,EGFRvIII,surface,state
+FJComp-PE-A,PE-A,TNFa,intracellular,type
+FJComp-mCherry-A,mCherry-A,Tcells,intracellular,state
+FJComp-BFP-A,BFP-A,mTagBFP2,intracellular,state
+FJComp-Zombie NIR-A,Zombie NIR-A,live_dead,intracellular,state
