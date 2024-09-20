@@ -1,0 +1,13 @@
+Filename	Nr. Measurements before cleaning	Nr. Measurements after cleaning	% Full analysis	Analysis by	% IT analysis	% MAD analysis	% Consecutive cells	MAD	IT limit	Consecutive bins	Events per bin	Increasing/Decreasing channel
+file62b33b97e515	21719	21719	0	all	NA	0	0	6	0.55	5	500	No increasing or decreasing effect
+file62b37140e443	9255	8000	13.56023771	all	NA	13.56023771	0	6	0.55	5	500	Decreasing channel
+file62b35b4a24cb	12121	12121	0	all	NA	0	0	6	0.55	5	500	Decreasing channel
+file62b360b5ba3f	61830	61830	0	all	0	0	0	6	0.55	5	500	No increasing or decreasing effect
+file62b33ad6afb3	48290	48290	0	all	0	0	0	6	0.55	5	500	No increasing or decreasing effect
+file62b364a92ef2	54208	54208	0	all	0	0	0	6	0.55	5	500	No increasing or decreasing effect
+file62b31f49457f	10197	9750	4.383642248	all	NA	4.383642248	0	6	0.55	5	500	Decreasing channel
+file62b3371a4e5	7053	6500	7.840635191	all	NA	7.840635191	0	6	0.55	5	500	Increasing and decreasing channel
+file62b31a00b827	11410	9750	14.54864154	all	NA	14.54864154	0	6	0.55	5	500	No increasing or decreasing effect
+file62b3253a15c7	40689	39750	2.307749023	all	0	2.307749023	0	6	0.55	5	500	No increasing or decreasing effect
+file62b386bcee9	41939	41939	0	all	0	0	0	6	0.55	5	500	No increasing or decreasing effect
+file62b35ddd2750	54660	54660	0	all	0	0	0	6	0.55	5	500	No increasing or decreasing effect

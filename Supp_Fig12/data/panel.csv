@@ -1,0 +1,27 @@
+fcs_colname,fcs_colname_2,antigen,surface_intracell,marker_class
+FSC-A,FSC-A,FSC-A,NA,NA
+FSC-H,FSC-H,FSC-H,NA,NA
+SSC-A,SSC-A,SSC-A,NA,NA
+SSC-B-A,SSC-B-A,SSC-B-A,NA,NA
+SSC-B-H,SSC-B-H,SSC-B-H,NA,NA
+SSC-H,SSC-H,SSC-H,NA,NA
+FJComp-AF P2-A,AF P2-A,AF-A,surface,state
+FJComp-BV421-A,BV421-A,BV-StainBuffer,surface,state
+FJComp-BUV395-A,BUV395-A,CD11b,surface,type
+FJComp-BUV496-A,BUV496-A,CD11c,surface,type
+FJComp-BUV563-A,BUV563-A,CD49d,surface,type
+FJComp-BUV661-A,BUV661-A,Ly6G,surface,type
+FJComp-BUV737-A,BUV737-A,CD45,surface,type
+FJComp-BFP-A,BFP-A,Tumor,surface,type
+FJComp-BV785-A,BV785-A,Ly6C,surface,type
+FJComp-APC-A,APC-A,XCR1,surface,type
+FJComp-APC-Fire 810-A,APC-Fire 810-A,P2ry12,surface,type
+FJComp-BV605-A,BV605-A,CD80,surface,type
+FJComp-NovaFluor Blue 610-70S-A,NovaFluor Blue 610-70S-A,MHCII,surface,type
+FJComp-PE-Cy5-A,PE-Cy5-A,CD86,surface,type
+FJComp-PE-Cy7-A,PE-Cy7-A,PDL1,surface,type
+FJComp-FITC-A,FITC-A,Siglec1,surface,type
+FJComp-Alexa Fluor 700-A,Alexa Fluor 700-A,CD206,surface,type
+FJComp-APC-Cy7-A,APC-Cy7-A,CD163,surface,type
+FJComp-Zombie Aqua-A,Zombie Aqua-A,live_dead,intracellular,state
+FJComp-mCherry-A,mCherry-A,mCherry,intracellular,state
